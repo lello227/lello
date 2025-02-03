@@ -1,0 +1,36 @@
+<video id="video" width="640" height="480" autoplay>
+  <source src="http://<IP_DEL_TUO_TELEFONO>:8080/video" type="video/mp4">
+</video>
+<script src="https://cdn.jsdelivr.net/npm/inferencejs"></script>
+<script>
+  const { InferenceEngine, CVImage } = inferencejs;
+  const inferEngine = new InferenceEngine();
+
+  inferEngine.startWorker("saldature-difetti", "3", "rf_ONH6MXxeh4XxsGTPdberfwTSaKQ2")
+    .then(function(workerId) {
+      const video = document.getElementById("video");
+
+      // Esegui inferenza sul video in tempo reale
+      setInterval(function() {
+        const image = new CVImage(video);
+        inferEngine.infer(workerId, image)
+          .then(function(predictions) {
+            // Disegna i bounding box sulle previsioni
+            predictions.forEach(prediction => {
+              const { x, y, width, height, class_name } = prediction;
+              const canvas = document.getElementById("canvas");
+              const ctx = canvas.getContext("2d");
+              ctx.clearRect(0, 0, canvas.width, canvas.height); // Pulisci il canvas
+              ctx.beginPath();
+              ctx.rect(x, y, width, height);
+              ctx.lineWidth = 3;
+              ctx.strokeStyle = "red";
+              ctx.stroke();
+              ctx.font = "16px Arial";
+              ctx.fillStyle = "red";
+              ctx.fillText(class_name, x, y - 10);
+            });
+          });
+      }, 100); // Esegui inferenza ogni 100ms (modifica per prestazioni)
+    });
+</script>
