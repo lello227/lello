@@ -1,0 +1,47 @@
+<video id="video" width="640" height="480" autoplay>
+  <source src="http://192.168.1.246:8080/video" type="video/mp4">
+</video>
+<canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+<script src="https://cdn.jsdelivr.net/npm/inferencejs"></script>
+<script>
+  const { InferenceEngine, CVImage } = inferencejs;
+  const inferEngine = new InferenceEngine();
+
+  inferEngine.startWorker("saldature-difetti", "16", "rf_ONH6MXxeh4XxsGTPdberfwTSaKQ2")
+    .then(function(workerId) {
+      const video = document.getElementById("video");
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+
+      setInterval(function() {
+        const image = new CVImage(video);
+        inferEngine.infer(workerId, image)
+          .then(function(predictions) {
+            if (predictions.length > 0) {
+              // Cattura il fotogramma se viene rilevato un difetto
+              canvas.width = video.videoWidth;
+              canvas.height = video.videoHeight;
+              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+              // Converti l'immagine in Blob e salvala
+              canvas.toBlob(blob => {
+                const file = new File([blob], `difetto_${Date.now()}.png`, { type: "image/png" });
+                saveToOneDrive(file);
+              }, "image/png");
+            }
+          });
+      }, 1000);
+    });
+
+  function saveToOneDrive(file) {
+    // Simulazione del salvataggio su OneDrive: sostituire con API OneDrive
+    const formData = new FormData();
+    formData.append("file", file);
+
+    fetch("D:/Users/veropalumbo catello/OneDrive - fincantieri.it/Saldatura_difetti", {
+      method: "POST",
+      body: formData
+    }).then(response => console.log("Immagine salvata!"))
+      .catch(error => console.error("Errore nel salvataggio:", error));
+  }
+</script>
